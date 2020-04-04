@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, InputNumber, Button,Select } from 'antd';
-import firebase from 'firebase/app';
+import { Form, Input, InputNumber, Button,Select, Upload, message } from 'antd';
+import firebase, { storage } from 'firebase/app';
 import { useHistory } from "react-router-dom";
+import { UploadOutlined } from '@ant-design/icons';
+import 'firebase/storage';
 const { Option } = Select;
 
 const layout = {
@@ -33,6 +35,10 @@ const CreateFoodComponent = () => {
   const [description,setDescription] = useState(null);
   const [restaurantId,setRestaurantId] = useState(null);
   const [restaurants,setRestaurants] = useState(null);
+  //image upload
+  const allInputs = {imgUrl: ''}
+  const [imageAsFile, setImageAsFile] = useState('')
+  const [imageAsUrl, setImageAsUrl] = useState(allInputs)
   
 
   const getRestaraunts = ()=>{
@@ -59,6 +65,27 @@ const CreateFoodComponent = () => {
     // console.log(values.food.title);    
     const db = firebase.firestore();
 
+    if(imageAsFile === '') {
+      console.error(imageAsFile,`not an image, the image file is a ${typeof(imageAsFile)}`)
+    }
+   
+    const uploadTask =  firebase.storage().ref(`images/${imageAsFile.name}`).put(imageAsFile)
+    //initiates the firebase side uploading 
+    uploadTask.on('state_changed', 
+    (snapShot) => {
+      //takes a snap shot of the process as it is happening
+      console.log(snapShot)
+    }, (err) => {
+      //catches the errors
+      console.log('fgjhfh')
+    }, () => {
+      // gets the functions from storage refences the image storage in firebase by the children
+      // gets the download url then sets the image from firebase as the value for the imgUrl key:
+      firebase.storage().ref('images').child(imageAsFile.name).getDownloadURL()
+       .then(fireBaseUrl => {
+         setImageAsUrl(prevObject => ({...prevObject, imgUrl: fireBaseUrl}))
+       })
+    })
     db.collection("food").add({  
         restaurantId:restaurantId,      
         title: values.food.title,
@@ -77,6 +104,33 @@ const CreateFoodComponent = () => {
     console.log(e,obj);
     setRestaurantId(e);
   }
+
+  const props = {
+    name: 'file',
+    action: 'https://www.mocky.io/v2/5cc8019d300000980a055e76',
+    headers: {
+      authorization: 'authorization-text',
+    },
+    onChange(info) {
+      handleImageAsFile(info);
+      if (info.file.status !== 'uploading') {
+        console.log(info.file, info.fileList);
+      }
+      if (info.file.status === 'done') {
+        message.success(`${info.file.name} file uploaded successfully`);
+      } else if (info.file.status === 'error') {
+        message.error(`${info.file.name} file upload failed.`);
+      }
+    },
+  };
+  
+  
+  const handleImageAsFile = (e) => {
+    const image = e.fileList[0];
+    console.log(e,'imageasd asd asd asd');
+    let asd = image.originFileObj;
+    setImageAsFile((imageFile) => (asd))
+}
 
   return (
     restaurants && 
@@ -110,6 +164,13 @@ const CreateFoodComponent = () => {
       </Form.Item>   
       <Form.Item name={['food', 'description']} label="Описание" rules={[{ required: true }]}>
         <Input.TextArea onChange={(e)=>{setDescription(e.target.value)}}/>
+      </Form.Item>
+      <Form.Item name={['food', 'photo']} label="Фотография" rules={[{ required: true }]}>
+      <Upload {...props}>
+        <Button onChange={handleImageAsFile}>
+          <UploadOutlined /> Click to Upload
+        </Button>
+      </Upload>
       </Form.Item>
       <Form.Item wrapperCol={{ ...layout.wrapperCol, offset: 8 }}>
         <Button type="primary" htmlType="submit">

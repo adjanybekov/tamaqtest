@@ -17,5 +17,10 @@
   }
   
   .site-layout .site-layout-background {
-    background: #fff;
+    background: #fff;   
+  }
+
+  .ant-layout-content{
+    border: solid 1px #555;
+    -webkit-box-shadow: 0 0 10px rgba(0,0,0,0.6);
   }
